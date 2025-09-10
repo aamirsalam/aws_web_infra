@@ -49,8 +49,8 @@ resource "aws_route_table" "prod-route-table" {
 
 
 resource "aws_subnet" "prod-subnet" {
-  vpc_id     = aws_vpc.prod-vpc.id
-  cidr_block = "10.0.1.0/24"
+  vpc_id            = aws_vpc.prod-vpc.id
+  cidr_block        = "10.0.1.0/24"
   availability_zone = "us-east-1a"
 
   tags = {
@@ -94,7 +94,7 @@ resource "aws_vpc_security_group_ingress_rule" "allow_tls_ipv4" {
 
 resource "aws_vpc_security_group_ingress_rule" "allow_tls_ssh" {
   security_group_id = aws_security_group.allow_web.id
-  cidr_ipv4         = "0.0.0.0/0"   # Or restrict to your IP for better security
+  cidr_ipv4         = "0.0.0.0/0" # Or restrict to your IP for better security
   from_port         = 22
   ip_protocol       = "tcp"
   to_port           = 22
@@ -128,19 +128,19 @@ resource "aws_eip" "one" {
   domain                    = "vpc"
   network_interface         = aws_network_interface.web-server-nic.id
   associate_with_private_ip = "10.0.1.50"
-  depends_on = [ aws_internet_gateway.gw ]
+  depends_on                = [aws_internet_gateway.gw]
 }
 
 #Create EC2 instance
 
 resource "aws_instance" "my_first_server" {
-  ami           = "ami-00ca32bbc84273381" # Amazon Linux 2 AMI (HVM), SSD Volume Type - us-east-1
-  instance_type = "t2.micro"
+  ami               = "ami-00ca32bbc84273381" # Amazon Linux 2 AMI (HVM), SSD Volume Type - us-east-1
+  instance_type     = "t2.micro"
   availability_zone = "us-east-1a"
-  key_name = "aamir_ec2"
+  key_name          = "aamir_ec2"
 
   network_interface {
-    device_index = 0
+    device_index         = 0
     network_interface_id = aws_network_interface.web-server-nic.id
   }
 
