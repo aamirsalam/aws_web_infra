@@ -134,7 +134,7 @@ resource "aws_eip" "one" {
 #Create EC2 instance
 
 resource "aws_instance" "my_first_server" {
-  ami           = "ami-09e6f87a47903347c"
+  ami           = "ami-00ca32bbc84273381" # Amazon Linux 2 AMI (HVM), SSD Volume Type - us-east-1
   instance_type = "t2.micro"
   availability_zone = "us-east-1a"
   key_name = "aamir_ec2"
