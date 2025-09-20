@@ -124,17 +124,34 @@ resource "aws_network_interface" "web-server-nic" {
 
 #Elastic IP. Has a depends on flag with IGW; set depends_on flag with IGW.
 
-resource "aws_eip" "one" {
-  domain                    = "vpc"
-  network_interface         = aws_network_interface.web-server-nic.id
-  associate_with_private_ip = "10.0.1.50"
-  depends_on                = [aws_internet_gateway.gw]
-}
+# resource "aws_eip" "one" {
+#   domain                    = "vpc"
+#   network_interface         = aws_network_interface.web-server-nic.id
+#   associate_with_private_ip = "10.0.1.50"
+#   depends_on                = [aws_internet_gateway.gw]
+# }
 
 #Create EC2 instance
 
+data "aws_ami" "amazon_linux_2" {
+  most_recent = true
+  owners      = ["amazon"]
+
+  filter {
+    name   = "name"
+    values = ["amzn2-ami-hvm-*-x86_64-gp2"]
+  }
+
+  filter {
+    name   = "state"
+    values = ["available"]
+  }
+}
+
+
 resource "aws_instance" "my_first_server" {
-  ami               = "ami-00ca32bbc84273381" # Amazon Linux 2 AMI (HVM), SSD Volume Type - us-east-1
+  #ami               = "ami-00ca32bbc84273381" # Amazon Linux 2 AMI (HVM), SSD Volume Type - us-east-1
+  ami               = data.aws_ami.amazon_linux_2.id
   instance_type     = "t2.micro"
   availability_zone = "us-east-1a"
   key_name          = "aamir_ec2"
