@@ -163,11 +163,27 @@ resource "aws_instance" "my_first_server" {
 
   user_data = <<-EOF
               #!/bin/bash
-              sudo yum update -y
-              sudo yum install httpd -y
-              systemctl start httpd
-              systemctl enable httpd
-              sudo bash -c 'echo your very first web server > /var/www/html/index.html'
+              # Log all output to a file for debugging
+              exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
+
+              # Wait for cloud-init to finish
+              cloud-init status --wait
+
+              # Update and install httpd with error checking
+              echo "Starting yum update..."
+              sudo yum update -y || exit 1
+              
+              echo "Installing httpd..."
+              sudo yum install -y httpd || exit 1
+              
+              echo "Starting and enabling httpd..."
+              sudo systemctl start httpd || exit 1
+              sudo systemctl enable httpd || exit 1
+              
+              echo "Creating web page..."
+              echo "your very first web server" | sudo tee /var/www/html/index.html
+
+              echo "User data script completed"
               EOF
 
   tags = {
