@@ -175,7 +175,12 @@ resource "aws_instance" "my_first_server" {
               # Log all output to a file for debugging
               exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
 
+              echo "Waiting 60 seconds for system to settle..."
+              sleep 60
+
               # Wait for cloud-init to finish
+              echo "Checking cloud-init status..."
+              cloud-init status
               cloud-init status --wait
 
               # Update and install httpd with error checking
