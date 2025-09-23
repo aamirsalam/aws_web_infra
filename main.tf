@@ -175,29 +175,37 @@ resource "aws_instance" "my_first_server" {
               # Log all output to a file for debugging
               exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
 
-              echo "Waiting 60 seconds for system to settle..."
-              sleep 60
-
-              # Wait for cloud-init to finish
-              echo "Checking cloud-init status..."
-              cloud-init status
-              cloud-init status --wait
-
-              # Update and install httpd with error checking
-              echo "Starting yum update..."
-              sudo yum update -y || exit 1
+              # Wait for system to settle and package manager to be available
+              echo "[$(date)] Waiting for system to initialize..."
+              sleep 120
               
-              echo "Installing httpd..."
-              sudo yum install -y httpd || exit 1
+              # Check if yum is locked
+              echo "[$(date)] Checking yum lock..."
+              while [ -f /var/run/yum.pid ]; do
+                echo "[$(date)] Waiting for yum lock to clear..."
+                sleep 10
+              done
               
-              echo "Starting and enabling httpd..."
-              sudo systemctl start httpd || exit 1
-              sudo systemctl enable httpd || exit 1
+              # Install and configure Apache
+              echo "[$(date)] Installing httpd..."
+              until sudo yum install -y httpd; do
+                echo "[$(date)] Retrying httpd installation..."
+                sleep 10
+              done
               
-              echo "Creating web page..."
-              echo "your very first web server" | sudo tee /var/www/html/index.html
-
-              echo "User data script completed"
+              echo "[$(date)] Starting httpd service..."
+              sudo systemctl start httpd
+              
+              echo "[$(date)] Enabling httpd service..."
+              sudo systemctl enable httpd
+              
+              echo "[$(date)] Creating index.html..."
+              echo "<h1>Hello from AWS $(hostname)</h1>" | sudo tee /var/www/html/index.html
+              
+              echo "[$(date)] Checking httpd status..."
+              sudo systemctl status httpd
+              
+              echo "[$(date)] User data script completed"
               EOF
 
   tags = {
