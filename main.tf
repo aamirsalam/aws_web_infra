@@ -133,12 +133,12 @@ resource "aws_network_interface" "web-server-nic" {
 
 #Elastic IP. Has a depends on flag with IGW; set depends_on flag with IGW.
 
-# resource "aws_eip" "one" {
-#   domain                    = "vpc"
-#   network_interface         = aws_network_interface.web-server-nic.id
-#   associate_with_private_ip = "10.0.1.50"
-#   depends_on                = [aws_internet_gateway.gw]
-# }
+resource "aws_eip" "one" {
+  domain                    = "vpc"
+  network_interface         = aws_network_interface.web-server-nic.id
+  associate_with_private_ip = "10.0.1.50"
+  depends_on                = [aws_internet_gateway.gw]
+}
 
 #Create EC2 instance
 
@@ -164,6 +164,7 @@ resource "aws_instance" "my_first_server" {
   instance_type     = "t2.micro"
   availability_zone = "us-east-1a"
   key_name          = "aamir_ec2"
+  depends_on = [aws_eip.one]
 
   network_interface {
     device_index         = 0
@@ -172,6 +173,11 @@ resource "aws_instance" "my_first_server" {
 
   user_data = <<-EOF
               #!/bin/bash
+              # Wait for network connectivity
+              until ping -c 1 amazon.com; do
+                echo "Waiting for network connectivity..."
+                sleep 5
+              done
               # Log all output to a file for debugging
               exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
 
