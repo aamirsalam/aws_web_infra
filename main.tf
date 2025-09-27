@@ -164,7 +164,8 @@ resource "aws_instance" "my_first_server" {
   instance_type     = "t2.micro"
   availability_zone = "us-east-1a"
   key_name          = "aamir_ec2"
-  depends_on = [aws_eip.one]
+  depends_on        = [aws_eip.one]
+
 
   network_interface {
     device_index         = 0
@@ -172,50 +173,53 @@ resource "aws_instance" "my_first_server" {
   }
 
   user_data = <<-EOF
-              #!/bin/bash
-              # Wait for network connectivity
-              until ping -c 1 amazon.com; do
-                echo "Waiting for network connectivity..."
-                sleep 5
-              done
-              # Log all output to a file for debugging
-              exec > >(tee /var/log/user-data.log|logger -t user-data -s 2>/dev/console) 2>&1
+    #!/bin/bash
 
-              # Wait for system to settle and package manager to be available
-              echo "[$(date)] Waiting for system to initialize..."
-              sleep 120
-              
-              # Check if yum is locked
-              echo "[$(date)] Checking yum lock..."
-              while [ -f /var/run/yum.pid ]; do
-                echo "[$(date)] Waiting for yum lock to clear..."
-                sleep 10
-              done
-              
-              # Install and configure Apache
-              echo "[$(date)] Installing httpd..."
-              until sudo yum install -y httpd; do
-                echo "[$(date)] Retrying httpd installation..."
-                sleep 10
-              done
-              
-              echo "[$(date)] Starting httpd service..."
-              sudo systemctl start httpd
-              
-              echo "[$(date)] Enabling httpd service..."
-              sudo systemctl enable httpd
-              
-              echo "[$(date)] Creating index.html..."
-              echo "<h1>Hello from AWS $(hostname)</h1>" | sudo tee /var/www/html/index.html
-              
-              echo "[$(date)] Checking httpd status..."
-              sudo systemctl status httpd
-              
-              echo "[$(date)] User data script completed"
-              EOF
+    #------------- wait for network -----------------
+    MAX_RETRIES=20
+    RETRY_COUNT=0
+    until ping -c 1 amazon.com; do
+      echo "Waiting for network connectivity..."
+      sleep 5
+      RETRY_COUNT=$((RETRY_COUNT+1))
+      if [ "$RETRY_COUNT" -ge "$MAX_RETRIES" ]; then
+        echo "Network check failed after $MAX_RETRIES attempts, continuing anyway."
+        break
+      fi
+    done
+
+    #------------- log everything -------------------
+    exec > >(tee /var/log/user-data.log | logger -t user-data -s 2>/dev/console) 2>&1
+
+    #------------- allow system to settle -----------
+    echo "[$(date)] Waiting for system to initialize..."
+    sleep 120
+
+    #------------- wait for yum lock ---------------
+    echo "[$(date)] Checking yum lock..."
+    while [ -f /var/run/yum.pid ]; do
+      echo "[$(date)] Waiting for yum lock to clear..."
+      sleep 10
+    done
+
+    #------------- install Apache -------------------
+    echo "[$(date)] Installing httpd..."
+    until yum install -y httpd; do
+      echo "[$(date)] Retrying httpd installation..."
+      sleep 10
+    done
+
+    echo "[$(date)] Starting and enabling httpd..."
+    systemctl start httpd
+    systemctl enable httpd
+
+    echo "[$(date)] Creating index.html..."
+    echo "<h1>Hello from AWS $(hostname)</h1>" > /var/www/html/index.html
+
+    echo "[$(date)] User-data script completed"
+  EOF
 
   tags = {
-    name = "web-server"
+    Name = "web-server"
   }
-
 }
